@@ -1,4 +1,4 @@
-# pukiwiki_tweet
+# pukiwiki自作プラグイン tweet.inc.php
 
 PukiwikiにTwitterの単体のツイートを埋め込むだけのプラグインです。
 
