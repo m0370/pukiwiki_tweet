@@ -16,8 +16,11 @@ https://oncologynote.com/?b723fa4260
 
 ## 使い方
 
->#tweet(1375069974583074816) // ツイートIDを書く場合
->#tweet(https://twitter.com/m0370/status/1375069974583074816) // ツイートURLを書く場合
+>#tweet(1375069974583074816)  
+>// ツイートIDを書く場合
+
+>#tweet(https://twitter.com/m0370/status/1375069974583074816)  
+>// ツイートURLを書く場合
 
 上記のように記載すればツイートが表示されます。
 
@@ -28,7 +31,7 @@ ver1.0と比べての変化点は、TwitterのサイトからJSONでツイート
 
 ### ver2.2の変更点
 
-https://platform.twitter.com/widgets.jsを遅延読み込みで呼び出す方法を、lazysizes.jsを使わずにこのプラグイン単独で対応しています。
+https://platform.twitter.com/widgets.js を遅延読み込みで呼び出す方法を、 lazysizes.js を使わずにこのプラグイン単独で対応しています。
 
 具体的には初回スクロール（scroll）または初回マウス移動（mousemove）で発火するjavascriptを使ってwidget.jsを読み込んでいます。このjavascriptはスキンの$head_tagの中に配置するようにしています。初回スクロールで発火するjavasriptは下記のサイトを参考にさせていただきました。なお、widgets.jsをpreloadで読み込むようにすることでさらに高速化が図れます。
 
