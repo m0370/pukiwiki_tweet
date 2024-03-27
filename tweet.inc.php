@@ -4,8 +4,9 @@
 // ver2.1 データ保管方式を .datから.txtに変更、ブラウザのnative loading="lazy"などに対応
 // ver2.2 lazysizes.jsなしでの遅延読み込みに対応
 // ver2.3 第2引数以降の引数にnoimgまたはnoconvとつけると、それぞれ画像を非表示にしたりリプライツイートのスレッドを非表示にできます。両方を併用することもできます。
+// ver2.4 バグの微修正
 
-define('PLUGIN_TWEET_LAZYLOAD', TRUE); // 初回スクロールに反応しての遅延読み込みを有効にするにはTRUEに、使っていないならFALSEに
+define('PLUGIN_TWEET_LAZYLOAD', FALSE); // 初回スクロールに反応しての遅延読み込みを有効にするにはTRUEに、使っていないならFALSEに
 define('PLUGIN_TWEET_JSURL', 'https://platform.twitter.com/widgets.js'); //デフォルトは https://platform.twitter.com/widgets.js
 
 function plugin_tweet_convert()
