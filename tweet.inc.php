@@ -4,18 +4,30 @@
 // ver2.1 データ保管方式を .datから.txtに変更、ブラウザのnative loading="lazy"などに対応
 // ver2.2 lazysizes.jsなしでの遅延読み込みに対応
 // ver2.3 第2引数以降の引数にnoimgまたはnoconvとつけると、それぞれ画像を非表示にしたりリプライツイートのスレッドを非表示にできます。両方を併用することもできます。
-// ver2.4 バグの微修正
+// ver2.6 埋め込みURLのドメイン変更とツイートID取得処理を改善
 
 define('PLUGIN_TWEET_LAZYLOAD', FALSE); // 初回スクロールに反応しての遅延読み込みを有効にするにはTRUEに、使っていないならFALSEに
 define('PLUGIN_TWEET_JSURL', 'https://platform.twitter.com/widgets.js'); //デフォルトは https://platform.twitter.com/widgets.js
 
+// 指定された文字列からツイートIDを取得する
+function plugin_tweet_get_id($str)
+{
+    if (preg_match('/(?:https?:\/\/)?(?:x\.com|twitter\.com)\/[^\/]+\/status(?:es)?\/(\d+)/i', $str, $m)) {
+        return $m[1];
+    }
+    if (preg_match('/^\d+$/', $str)) {
+        return $str;
+    }
+    return '';
+}
+
 function plugin_tweet_convert()
 {
-	global $head_tags;
-	$tw = func_get_args();
-	preg_match('/[0-9]{9,30}/', $tw[0], $tweetids); //URLでもツイートIDでも投稿できるように
-	$tweetid = end($tweetids);
-	$tweeturl = 'https://twitter.com/user/status/' . $tweetid ;
+        global $head_tags;
+        $tw = func_get_args();
+        $tweetid = plugin_tweet_get_id($tw[0]); //URLからもツイートIDからも取得
+        if ($tweetid === '') return '';
+       $tweeturl = 'https://x.com/user/status/' . $tweetid ;
 	$datcache = CACHE_DIR . 'tweet/' . $tweetid . '.txt';
 
 	//オプション設定
@@ -41,7 +53,7 @@ function plugin_tweet_convert()
 
 		if ($arr === NULL) {
 			//json取得失敗
-			$html = '<blockquote class="twitter-tweet"><a href="https://twitter.com/user/status/' . $tweetid . '">' . $tw[1] . '</a></blockquote>';
+                       $html = '<blockquote class="twitter-tweet"><a href="https://x.com/user/status/' . $tweetid . '">' . $tw[1] . '</a></blockquote>';
 		} else {
 			//json取得成功
 			$html = html_entity_decode($arr['html']);
