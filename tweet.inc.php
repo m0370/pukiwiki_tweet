@@ -5,30 +5,55 @@
 // ver2.2 lazysizes.jsなしでの遅延読み込みに対応
 // ver2.3 第2引数以降の引数にnoimgまたはnoconvとつけると、それぞれ画像を非表示にしたりリプライツイートのスレッドを非表示にできます。両方を併用することもできます。
 // ver2.6 埋め込みURLのドメイン変更とツイートID取得処理を改善
+// ver2.7 ツイートURL構築の不具合を修正、キャッシュディレクトリ自動作成、エラーハンドリング改善
 
 define('PLUGIN_TWEET_LAZYLOAD', FALSE); // 初回スクロールに反応しての遅延読み込みを有効にするにはTRUEに、使っていないならFALSEに
 define('PLUGIN_TWEET_JSURL', 'https://platform.twitter.com/widgets.js'); //デフォルトは https://platform.twitter.com/widgets.js
 
-// 指定された文字列からツイートIDを取得する
-function plugin_tweet_get_id($str)
+// 指定された文字列からツイート情報を取得する
+function plugin_tweet_parse_input($str)
 {
-    if (preg_match('/(?:https?:\/\/)?(?:x\.com|twitter\.com)\/[^\/]+\/status(?:es)?\/(\d+)/i', $str, $m)) {
-        return $m[1];
+    // URLの場合、ユーザー名とツイートIDを抽出
+    if (preg_match('/(?:https?:\/\/)?(?:x\.com|twitter\.com)\/([^\/]+)\/status(?:es)?\/(\d+)/i', $str, $m)) {
+        $username = $m[1];
+        $tweetid = $m[2];
+        return array(
+            'id' => $tweetid,
+            'url' => 'https://x.com/' . $username . '/status/' . $tweetid,
+            'username' => $username
+        );
     }
+    // ツイートIDのみの場合
     if (preg_match('/^\d+$/', $str)) {
-        return $str;
+        return array(
+            'id' => $str,
+            'url' => null,
+            'username' => null
+        );
     }
-    return '';
+    return null;
 }
 
 function plugin_tweet_convert()
 {
         global $head_tags;
         $tw = func_get_args();
-        $tweetid = plugin_tweet_get_id($tw[0]); //URLからもツイートIDからも取得
-        if ($tweetid === '') return '';
-       $tweeturl = 'https://x.com/user/status/' . $tweetid ;
-	$datcache = CACHE_DIR . 'tweet/' . $tweetid . '.txt';
+
+        // ツイート情報を解析
+        $tweet_info = plugin_tweet_parse_input($tw[0]);
+        if ($tweet_info === null || $tweet_info['id'] === null) {
+            return '<p style="color:red;">エラー: 有効なツイートIDまたはURLを指定してください。</p>';
+        }
+
+        $tweetid = $tweet_info['id'];
+        $tweeturl = $tweet_info['url'];
+
+        // キャッシュディレクトリの確認と作成
+        $cache_dir = CACHE_DIR . 'tweet/';
+        if (!file_exists($cache_dir)) {
+            mkdir($cache_dir, 0777, true);
+        }
+        $datcache = $cache_dir . $tweetid . '.txt';
 
 	//オプション設定
 	$options = array(
@@ -44,6 +69,11 @@ function plugin_tweet_convert()
 		$html = html_entity_decode($arr['html']);
 	} else {
 		//キャッシュがない場合
+		// ツイートIDのみでURLがない場合はエラー
+		if ($tweeturl === null) {
+			return '<p style="color:red;">エラー: ツイートIDのみの指定では新規取得できません。完全なURLを指定するか、既存のキャッシュを使用してください。</p>';
+		}
+
 		$json_url = 'https://publish.twitter.com/oembed?maxwidth=550&dnt=true&url='. urlencode($tweeturl);
 		$ch = curl_init($json_url);
 		curl_setopt_array($ch, $options);
@@ -51,9 +81,10 @@ function plugin_tweet_convert()
 		$arr = json_decode($json, true);
 		curl_close($ch);
 
-		if ($arr === NULL) {
+		if ($arr === NULL || !isset($arr['html'])) {
 			//json取得失敗
-                       $html = '<blockquote class="twitter-tweet"><a href="https://x.com/user/status/' . $tweetid . '">' . $tw[1] . '</a></blockquote>';
+			$fallback_text = isset($tw[1]) ? htmlspecialchars($tw[1], ENT_QUOTES, 'UTF-8') : 'ツイートを読み込めませんでした';
+			$html = '<blockquote class="twitter-tweet"><a href="' . htmlspecialchars($tweeturl, ENT_QUOTES, 'UTF-8') . '">' . $fallback_text . '</a></blockquote>';
 		} else {
 			//json取得成功
 			$html = html_entity_decode($arr['html']);
