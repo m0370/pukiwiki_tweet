@@ -6,6 +6,7 @@
 // ver2.3 第2引数以降の引数にnoimgまたはnoconvとつけると、それぞれ画像を非表示にしたりリプライツイートのスレッドを非表示にできます。両方を併用することもできます。
 // ver2.6 埋め込みURLのドメイン変更とツイートID取得処理を改善
 // ver2.7 ツイートURL構築の不具合を修正、キャッシュディレクトリ自動作成、エラーハンドリング改善
+// ver2.8 キャッシュ読み込み時のエラーハンドリング追加、オプション処理の競合修正、cURLエラー処理改善
 
 define('PLUGIN_TWEET_LAZYLOAD', FALSE); // 初回スクロールに反応しての遅延読み込みを有効にするにはTRUEに、使っていないならFALSEに
 define('PLUGIN_TWEET_JSURL', 'https://platform.twitter.com/widgets.js'); //デフォルトは https://platform.twitter.com/widgets.js
@@ -66,7 +67,16 @@ function plugin_tweet_convert()
 		//キャッシュがある場合
 		$json = file_get_contents($datcache);
 		$arr = json_decode($json, true);
-		$html = html_entity_decode($arr['html']);
+		if ($arr !== NULL && isset($arr['html'])) {
+			$html = html_entity_decode($arr['html']);
+			// キャッシュからURLを復元（ツイートIDのみの指定の場合に使用）
+			if ($tweeturl === null && isset($arr['url'])) {
+				$tweeturl = $arr['url'];
+			}
+		} else {
+			// キャッシュが破損している場合
+			return '<p style="color:red;">エラー: キャッシュファイルが破損しています。</p>';
+		}
 	} else {
 		//キャッシュがない場合
 		// ツイートIDのみでURLがない場合はエラー
@@ -78,18 +88,26 @@ function plugin_tweet_convert()
 		$ch = curl_init($json_url);
 		curl_setopt_array($ch, $options);
 		$json = curl_exec($ch);
-		$arr = json_decode($json, true);
+		$curl_error = curl_error($ch);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 
-		if ($arr === NULL || !isset($arr['html'])) {
-			//json取得失敗
-			$fallback_text = isset($tw[1]) ? htmlspecialchars($tw[1], ENT_QUOTES, 'UTF-8') : 'ツイートを読み込めませんでした';
+		if ($json === false || $curl_error !== '') {
+			//cURLエラー
+			$fallback_text = isset($tw[1]) ? htmlspecialchars($tw[1], ENT_QUOTES, 'UTF-8') : 'ツイートを読み込めませんでした（通信エラー）';
 			$html = '<blockquote class="twitter-tweet"><a href="' . htmlspecialchars($tweeturl, ENT_QUOTES, 'UTF-8') . '">' . $fallback_text . '</a></blockquote>';
 		} else {
-			//json取得成功
-			$html = html_entity_decode($arr['html']);
-			//キャッシュする
-			file_put_contents($datcache, $json);
+			$arr = json_decode($json, true);
+			if ($arr === NULL || !isset($arr['html'])) {
+				//json取得失敗（404やAPI制限など）
+				$fallback_text = isset($tw[1]) ? htmlspecialchars($tw[1], ENT_QUOTES, 'UTF-8') : 'ツイートを読み込めませんでした';
+				$html = '<blockquote class="twitter-tweet"><a href="' . htmlspecialchars($tweeturl, ENT_QUOTES, 'UTF-8') . '">' . $fallback_text . '</a></blockquote>';
+			} else {
+				//json取得成功
+				$html = html_entity_decode($arr['html']);
+				//キャッシュする
+				file_put_contents($datcache, $json);
+			}
 		}
 	}
 
@@ -104,16 +122,19 @@ function plugin_tweet_convert()
 		}
 	}
 
-	if( in_array('noimg', $tw)){
-		$twjs4 = 'class="twitter-tweet"';
-		$twjs5 = 'class="twitter-tweet" data-cards="hidden"'; //画像非表示
-		$html = str_replace($twjs4, $twjs5, $html);
-	}
+	// オプション処理: noimg と noconv
+	$has_noimg = in_array('noimg', $tw);
+	$has_noconv = in_array('noconv', $tw);
 
-	if( in_array('noconv', $tw)){
-		$twjs6 = 'class="twitter-tweet"';
-		$twjs7 = 'class="twitter-tweet" data-conversation="none"'; //リプライを非表示
-		$html = str_replace($twjs6, $twjs7, $html);
+	if ($has_noimg || $has_noconv) {
+		$data_attrs = '';
+		if ($has_noimg) {
+			$data_attrs .= ' data-cards="hidden"';
+		}
+		if ($has_noconv) {
+			$data_attrs .= ' data-conversation="none"';
+		}
+		$html = str_replace('class="twitter-tweet"', 'class="twitter-tweet"' . $data_attrs, $html);
 	}
 	return <<<EOD
 	$html
