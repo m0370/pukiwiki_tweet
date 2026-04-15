@@ -24,6 +24,78 @@ https://oncologynote.jp/?b723fa4260
 
 上記のように記載すればツイートが表示されます。
 
+## Twitter API v2 による画像・引用ツイート取得（ver3.0/3.1）
+
+### Bearer Token の取得
+
+1. [Twitter Developer Portal](https://developer.twitter.com/) でアプリを作成する
+2. プロジェクトのダッシュボードから **Bearer Token** をコピーする
+3. `tweet.inc.php` の先頭にある定数に設定する
+
+```php
+define('PLUGIN_TWEET_BEARER_TOKEN', 'ここにBearer Tokenを貼り付ける');
+```
+
+Bearer Token を設定しない場合は従来の oEmbed API にフォールバックします（画像・引用ツイートは widgets.js 依存）。
+
+### キャッシュJSONの構造（v2使用時）
+
+`cache/tweet/{ツイートID}.txt` に以下の JSON が保存されます。
+
+```json
+{
+  "v2": {
+    "data": {
+      "id": "1234567890",
+      "text": "ツイート本文",
+      "author_id": "...",
+      "attachments": { "media_keys": ["3_xxx"] },
+      "referenced_tweets": [ {"type": "quoted", "id": "..."} ]
+    },
+    "includes": {
+      "media": [
+        { "type": "photo", "url": "https://pbs.twimg.com/media/XXX?format=jpg&name=orig",
+          "alt_text": "画像の説明" }
+      ],
+      "tweets": [ {"id": "...", "text": "引用元ツイート本文"} ],
+      "users":  [ {"id": "...", "name": "表示名", "username": "screen_name"} ]
+    }
+  },
+  "local_images": {
+    "3_xxx": "https://example.com/wiki/cache/tweet_img/1234567890_0.jpg"
+  },
+  "html": "<blockquote class=\"twitter-tweet\">...</blockquote>"
+}
+```
+
+### 画像ファイルをサーバーにローカル保存する（ver3.1）
+
+Twitter CDN の画像URLはツイートが削除されたり X のサービスが変化した場合に無効になります。
+画像ファイルをサーバーにローカル保存することで、ツイートが消えた後も画像を表示し続けることができます。
+
+`tweet.inc.php` で以下の2つの定数を設定してください。
+
+```php
+// 画像を保存するサーバー上の絶対パス（Webから読めるディレクトリ）
+define('PLUGIN_TWEET_LOCAL_IMAGE_DIR', '/var/www/html/wiki/cache/tweet_img');
+
+// そのディレクトリへのWebアクセス用URLプレフィックス
+define('PLUGIN_TWEET_LOCAL_IMAGE_URL', 'https://example.com/wiki/cache/tweet_img');
+```
+
+- 保存ファイル名は `{ツイートID}_{連番}.{拡張子}` 形式（例: `1234567890_0.jpg`）
+- 動画・GIFの場合はサムネイル画像（preview_image_url）を保存します
+- ローカル保存に成功するとキャッシュJSON の `local_images` にマッピングが記録されます
+- 両定数が未設定の場合は従来どおり Twitter CDN の URL を使用します
+
+### フォールバック動作まとめ
+
+| 条件 | 表示方法 |
+|------|---------|
+| Bearer Token あり | v2 API で取得した本文・画像・引用ツイートを静的 HTML で表示、widgets.js で公式ウィジェットに置換 |
+| Bearer Token なし | oEmbed API の HTML を使用（画像・引用ツイートは widgets.js 依存） |
+| ネットワーク障害時 | キャッシュから静的 HTML を表示 |
+
 ## 変更履歴
 ### ver2.1までの変更点
 
