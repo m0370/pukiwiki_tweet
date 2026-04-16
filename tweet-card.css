@@ -1,0 +1,234 @@
+/* tweet-card.css — キャッシュモード Twitter/Xカード表示スタイル
+   セレクタはすべて .tweet-card にネストし、PukiWikiテーマCSSと干渉しない */
+
+/* ===== カード全体 ===== */
+.tweet-card {
+  max-width: 550px;
+  margin: 1.5em 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.tweet-card blockquote.twitter-tweet {
+  background: #fff;
+  background-image: none;
+  border: 1px solid #cfd9de;
+  border-left: 1px solid #cfd9de;
+  border-radius: 12px;
+  box-shadow: none;
+  padding: 12px 16px 8px;
+  margin: 0;
+  color: #0f1419;
+  word-break: break-word;
+}
+
+/* ===== ヘッダー（アバター・名前・Xロゴ） ===== */
+.tweet-card .tweet-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tweet-card .tweet-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.tweet-card .tweet-author {
+  flex: 1;
+  min-width: 0;
+}
+
+.tweet-card .tweet-name {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 20px;
+  color: #0f1419;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tweet-card .tweet-handle {
+  display: block;
+  font-size: 13px;
+  line-height: 16px;
+  color: #536471;
+}
+
+.tweet-card .tweet-x-logo {
+  width: 24px;
+  height: 24px;
+  fill: #0f1419;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ===== 本文 ===== */
+.tweet-card .tweet-body {
+  margin-bottom: 8px;
+}
+
+.tweet-card .tweet-body p {
+  font-size: 15px;
+  line-height: 20px;
+  color: #0f1419;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ===== 画像グリッド ===== */
+.tweet-card .tweet-media {
+  display: grid;
+  gap: 2px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.tweet-card .tweet-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  margin: 0;
+  max-width: none;
+}
+
+/* 1枚 */
+.tweet-card .tweet-media[data-count="1"] {
+  grid-template-columns: 1fr;
+}
+.tweet-card .tweet-media[data-count="1"] img {
+  max-height: 300px;
+  object-fit: cover;
+}
+
+/* 2枚 */
+.tweet-card .tweet-media[data-count="2"] {
+  grid-template-columns: 1fr 1fr;
+  aspect-ratio: 16 / 9;
+}
+
+/* 3枚 */
+.tweet-card .tweet-media[data-count="3"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  aspect-ratio: 16 / 9;
+}
+.tweet-card .tweet-media[data-count="3"] img:first-child {
+  grid-row: 1 / 3;
+}
+
+/* 4枚 */
+.tweet-card .tweet-media[data-count="4"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  aspect-ratio: 16 / 9;
+}
+
+/* ===== 引用ツイート ===== */
+.tweet-card .tweet-quoted {
+  border: 1px solid #cfd9de;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 18px;
+  color: #0f1419;
+}
+
+.tweet-card .tweet-quoted p {
+  margin: 0 0 4px;
+}
+
+.tweet-card .tweet-quoted a {
+  color: #1d9bf0;
+  font-size: 13px;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.tweet-card .tweet-quoted a:hover {
+  text-decoration: underline;
+}
+
+/* ===== フッター（日時） ===== */
+.tweet-card .tweet-footer time {
+  display: block;
+  font-size: 13px;
+  color: #536471;
+  margin: 4px 0;
+}
+
+/* ツイートURLリンク（widgets.js検出用に残す） */
+.tweet-card blockquote.twitter-tweet > a:last-child {
+  font-size: 13px;
+  color: #1d9bf0;
+  text-decoration: none;
+  word-break: break-all;
+  display: block;
+  margin-top: 4px;
+}
+
+.tweet-card blockquote.twitter-tweet > a:last-child:hover {
+  text-decoration: underline;
+}
+
+/* ===== ライトボックスオーバーレイ ===== */
+.tweet-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.tweet-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== ダークモード ===== */
+@media (prefers-color-scheme: dark) {
+  .tweet-card blockquote.twitter-tweet {
+    background: #15202b;
+    border-color: #38444d;
+    color: #e7e9ea;
+  }
+
+  .tweet-card .tweet-name,
+  .tweet-card .tweet-body p,
+  .tweet-card .tweet-quoted {
+    color: #e7e9ea;
+  }
+
+  .tweet-card .tweet-handle,
+  .tweet-card .tweet-footer time {
+    color: #8b98a5;
+  }
+
+  .tweet-card .tweet-x-logo {
+    fill: #e7e9ea;
+  }
+
+  .tweet-card .tweet-quoted {
+    border-color: #38444d;
+  }
+
+  .tweet-card .tweet-quoted a {
+    color: #1d9bf0;
+  }
+}
